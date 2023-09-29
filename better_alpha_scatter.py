@@ -408,7 +408,7 @@ fig, axs = plt.subplots(1,3,figsize=(20,7),sharey=True,sharex=True)
 sims = ['original','tng','eagle']
 col  = ['C1','C2','C0']
 mark = ['^','*','o']
-linestyles = ['solid','dashdot','--']
+linestyles = ['solid','solid','solid']
 
 
 all_loc, all_glob, all_MZR = [],[],[]
@@ -436,6 +436,7 @@ axs[0].axhline(1, color='gray', linestyle=':', alpha=0.5)
 # plt.ylabel( r'$\sigma_{\rm individual} / \sigma_{z=0}$' )
 for ax in axs:
     ax.set_xlabel( r'${\rm Redshift}$' )
+    ax.axhline(1, color='k', linestyle='solid', alpha=1, lw=3)
 
 # axs[0].add_artist(leg)
 # plt.tight_layout()
@@ -540,7 +541,7 @@ axs[1].text( 0.05, 0.85,r'$\sigma_{\rm global} / \sigma_{\rm MZR}$',
 # for index, text in enumerate(leg.get_texts()):
 #     text.set_color(col[index])
 
-axs[1].axhline(1, color='gray', linestyle=':', alpha=0.5)
+
 
 xmin, xmax = axs[1].get_xlim()
 ymin, ymax = axs[1].get_ylim()
@@ -550,6 +551,12 @@ error_bar = 0.05 # Nominal 1% error bars
 axs[0].fill_between( np.arange(-1,11), (1 + error_bar), (1 - error_bar), color='gray', alpha=0.5 )
 axs[1].fill_between( np.arange(-1,11), (1 + error_bar), (1 - error_bar), color='gray', alpha=0.5 )
 axs[2].fill_between( np.arange(-1,11), (1 + error_bar), (1 - error_bar), color='gray', alpha=0.5 )
+
+error_bar = 0.10 # Nominal 1% error bars
+
+axs[0].fill_between( np.arange(-1,11), (1 + error_bar), (1 - error_bar), color='gray', alpha=0.25 )
+axs[1].fill_between( np.arange(-1,11), (1 + error_bar), (1 - error_bar), color='gray', alpha=0.25 )
+axs[2].fill_between( np.arange(-1,11), (1 + error_bar), (1 - error_bar), color='gray', alpha=0.25 )
 
 axs[0].set_xlim(xmin, xmax)
 axs[1].set_xlim(xmin, xmax)
