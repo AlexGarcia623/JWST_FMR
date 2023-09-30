@@ -129,7 +129,8 @@ m_star_min = 8.0
 m_star_max = 10.5
 m_gas_min  = 8.5
 
-# PLUS ONE BECAUE OF BOXPLOT PLOTTING 1-9 and not 0-8!!!
+##### PLUS ONE BECAUE OF BOXPLOT PLOTTING 1-9 and not 0-8!!! #####
+# From Langeroodi & Hjorth 2023
 Langeroodi23 = [
     (3.335522182113861 +1, -0.20249725880570124),
     (3.6810974633172764+1, -0.2148973130135885),
@@ -166,6 +167,7 @@ Langeroodi23_ydown = [
 
 ]
 
+# From Curti+2023
 Curti23 = [
     (4.248366013071896+1, -0.2290322580645161),
     (5.76470588235294 +1, -0.3451612903225807),
@@ -194,6 +196,69 @@ Curti23_ydown = [
     (4.248366013071896+1, -0.4774193548387098),
     (5.76470588235294 +1, -0.6129032258064517),
     (7.66013071895425 +1, -0.9032258064516132),
+]
+
+# From Nakajima+2023
+## Curti+2020 alpha = 0.66
+Nakajima23_C20 = [
+    (4.970986707566462+1, -0.21710974778459424),
+    (6.856680299931832+1, -0.2440567484662577),
+    (8.490030674846626+1, -0.46206117927743695),
+]
+
+Nakajima23_C20_up = [
+    (5.493311179277437+1, -0.21958077709611445),
+    (7.557302317655076+1, -0.24288513974096793),
+    (8.694146216768914+1, -0.4851312201772322),
+]
+
+Nakajima23_C20_down = [
+    (4.448747443762782+1, -0.2213275391956373),
+    (6.168754260395365+1, -0.24186264485344244),
+    (8.286468984321743+1, -0.4824684730743012),
+]
+
+Nakajima23_C20_yup = [
+    (4.980487389229721+1, 0.037086741649625),
+    (6.866564417177915+1, -0.019959952283571836),
+    (8.488113496932517+1, -0.31156271301976823),
+]
+
+Nakajima23_C20_ydown = [
+    (4.987048398091343+1, -0.47795245398773),
+    (6.859534764826175+1, -0.46813224267212017),
+    (8.492118268575325+1, -0.6259372869802315),
+]
+
+## Curti+2020 alpha = 0.66
+Nakajima23_AM13 = [
+    (4.96358326014583+1, -0.07978799452625562),
+    (6.838463266681646+1, -0.0701885173913932),
+    (8.466820530626418+1, -0.33876963297318285),
+]
+
+Nakajima23_AM13_up = [
+    (5.476072792630869+1, -0.07895059332938459),
+    (7.550948714282797+1, -0.06902432548354809),
+    (8.666898143420273+1, -0.3449786564816897),
+]
+
+Nakajima23_AM13_down = [
+    (4.438634831804906+1, -0.08391372725230295),
+    (6.163517902003636+1, -0.07455934315067103),
+    (8.26694716202692 +1, -0.3489001450133782),
+]
+
+Nakajima23_AM13_yup = [
+    (4.96031535303609  +1, 0.18164457425297686),
+    (6.8480627438165085+1, 0.1618533118196115),
+    (8.46457384448847  +1, -0.15903474193746048),
+]
+
+Nakajima23_AM13_ydown = [
+    (4.954351422560813+1, -0.34124098772492406),
+    (6.853904127775169+1, -0.30545740487326656),
+    (8.481362717264762+1, -0.5021445640407671),
 ]
 
 def do(ax,sim,c):
@@ -319,7 +384,7 @@ def do(ax,sim,c):
         y_err = np.array([ [y_err_down, y_err_up] ]).T
         if (index == 0):
             ax.errorbar( x, y, xerr=x_err, yerr=y_err, color='purple', marker='s', markersize=8,
-                       label = r'${\rm Langeroodi+(2023)}$' )
+                       label = r'${\rm Langeroodi\;\&\;Hjorth\;(2023)}$' )
         else:
             ax.errorbar( x, y, xerr=x_err, yerr=y_err, color='purple', marker='s', markersize=8 )
             
@@ -338,13 +403,47 @@ def do(ax,sim,c):
                        label = r'${\rm Curti+(2023)}$' )
         else:
             ax.errorbar( x, y, xerr=x_err, yerr=y_err, color='violet', marker='^', markersize=8 )
+            
+    for index, coords in enumerate(Nakajima23_C20):
+        x = coords[0]
+        y = coords[1]
+        x_err_up   = Nakajima23_C20_up[index][0] - x
+        x_err_down = x - Nakajima23_C20_down[index][0]
+        y_err_up   = Nakajima23_C20_yup[index][1] - y
+        y_err_down = y - Nakajima23_C20_ydown[index][1]
+        
+        x_err = np.array([ [x_err_down, x_err_up] ]).T
+        y_err = np.array([ [y_err_down, y_err_up] ]).T
+        if (index == 0):
+            ax.errorbar( x, y, xerr=x_err, yerr=y_err, color='goldenrod', marker='*', markersize=10,
+                       label = r'${\rm Nakajima+(2023; C20)}$' )
+        else:
+            ax.errorbar( x, y, xerr=x_err, yerr=y_err, color='goldenrod', marker='*', markersize=10 )
+            
+    for index, coords in enumerate(Nakajima23_AM13):
+        x = Nakajima23_C20[index][0]#coords[0]
+        y = coords[1]
+        x_err_up   = Nakajima23_C20_up[index][0] - x
+        x_err_down = x - Nakajima23_C20_down[index][0]
+        y_err_up   = Nakajima23_AM13_yup[index][1] - y
+        y_err_down = y - Nakajima23_AM13_ydown[index][1]
+        
+        x_err = np.array([ [x_err_down, x_err_up] ]).T
+        y_err = np.array([ [y_err_down, y_err_up] ]).T
+        if (index == 0):
+            ax.errorbar( x, y, xerr=x_err, yerr=y_err, color='navy', marker='o', markersize=8,
+                       label = r'${\rm Nakajima+(2023; AM13)}$' )
+        else:
+            ax.errorbar( x, y, xerr=x_err, yerr=y_err, color='navy', marker='o', markersize=8 )
+            
+            
     ax.set_xticklabels( np.arange(0,9) )
     
     redshifts = np.arange(0,9) + 1
     
     # ax.scatter( redshifts, means, color='k', marker='x', s=100 )
     
-    popt   = np.polyfit(redshifts, means, 1)
+    popt   = np.polyfit( redshifts, means, 1 )
     interp = np.polyval( popt, redshifts )
     
     ax.plot( redshifts, interp, color='k', lw=2.5, linestyle='--' )
@@ -434,10 +533,15 @@ for index, sim in enumerate(sims):
     ax = axs[index]
     color = cols[index]#'k'#'C' + str(index)
     do(ax, sim, color)
+
+ymin, ymax = axs[0].get_ylim()
+axs[0].set_ylim( ymin, ymax*1.2 )
+    
+axs[0].set_xlim(0,10)
     
 leg = axs[1].legend( loc='upper right', frameon=False, fontsize=18,
-                     handlelength=0 )
-colors = ['purple','violet']
+                     handlelength=0, labelspacing=0.05 )
+colors = ['purple','violet','goldenrod','navy']
 for index, text in enumerate(leg.get_texts()):
     text.set_color(colors[index])
 axs[1].set_ylabel( r'$\log {\rm (O/H)} - \log{\rm (O/H)}_{{\rm FMR}(z=0)}$' )
