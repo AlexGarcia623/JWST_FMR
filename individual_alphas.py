@@ -122,7 +122,7 @@ m_star_min = 8.0
 m_star_max = 10.5
 m_gas_min  = 8.5
 
-def do(sim,full_alpha,full_slope,full_intercept):
+def do(sim,full_alpha,full_slope,full_intercept,dual_criteria):
     
     fig, axs = plt.subplots( 3,4, figsize=(10,10),
                              gridspec_kw={'width_ratios': [1, 1, 0.4, 1]} )
@@ -218,7 +218,10 @@ def do(sim,full_alpha,full_slope,full_intercept):
             interp = np.polyval( popt, muCurrent )
             # interp = popt[0] * muCurrent + popt[1]
 
-            disp[index] = np.std( np.abs(Z_use) - np.abs(interp) )
+            if dual_criteria:
+                disp[index] = np.sum( np.abs(Z_use) - np.abs(interp) )# np.std( np.abs(Z_use) - np.abs(interp) ) * np.sum( np.abs(Z_use) - np.abs(interp) )
+            else:
+                disp[index] = np.std( np.abs(Z_use) - np.abs(interp) ) 
 
         argmin = np.argmin(disp)
 
@@ -231,6 +234,9 @@ def do(sim,full_alpha,full_slope,full_intercept):
         # Plot the global alpha
         global_mu   = star_mass - full_alpha * np.log10(SFR)
         global_line = full_slope * global_mu + full_intercept
+        
+        plot_global_mu   = np.linspace(7,11,200)
+        plot_global_line = full_slope * plot_global_mu + full_intercept
         
         Hist1, current_x, current_y = np.histogram2d(global_mu,Z_use,bins=(100,100))
         Hist2, _        , _         = np.histogram2d(global_mu,Z_use,bins=[current_x,current_y])
@@ -247,11 +253,15 @@ def do(sim,full_alpha,full_slope,full_intercept):
                               vmin = vmin, vmax = vmax, cmap=CMAP_TO_USE,
                               rasterized=True )
         
-        ax_global.plot( global_mu, global_line, color='k', lw=2.5 )
+        xmin,xmax = ax_global.get_xlim()
+        ymin,ymax = ax_global.get_ylim()
+        ax_global.plot( plot_global_mu, plot_global_line, color='k', lw=2.5 )
+        ax_global.set_xlim(xmin,xmax)
+        ax_global.set_ylim(ymin,ymax)
         
         ax_global.text( 0.05, 0.85, r"$z=%s$" %int(snap_index), transform=ax_global.transAxes )
-        ax_global.text( 0.7 , 0.2 , r"${\rm Global}$", transform=ax_global.transAxes, ha='center')
-        ax_global.text( 0.7 , 0.1 , r"$\alpha = %s$" %full_alpha,
+        ax_global.text( 0.7 , 0.2 , r"${\rm FMR}$", transform=ax_global.transAxes, ha='center')
+        ax_global.text( 0.7 , 0.1 , r"$\alpha_{\rm min} = %s$" %full_alpha,
                         transform=ax_global.transAxes, ha='center', fontsize=fs_og*0.75)
         
         ax_global.set_xlabel( r"$\mu_{%s}$" %full_alpha, fontsize=fs_og*0.75 )
@@ -266,6 +276,7 @@ def do(sim,full_alpha,full_slope,full_intercept):
         best_alpha = round( alphas[argmin], 2 )
         best_mu    = star_mass - best_alpha * np.log10(SFR)
         best_line  = a_s[argmin] * best_mu + b_s[argmin]
+        plot_best_line = a_s[argmin] * np.linspace(0,10) + b_s[argmin]
         
         Hist1, current_x, current_y = np.histogram2d(best_mu,Z_use,bins=(100,100))
         Hist2, _        , _         = np.histogram2d(best_mu,Z_use,bins=[current_x,current_y])
@@ -286,9 +297,9 @@ def do(sim,full_alpha,full_slope,full_intercept):
             global_mappable = mappable
 
         ax_local.plot( best_mu, best_line, color='k', lw=2.5 )
-
-        ax_local.text( 0.7, 0.2, r"${\rm Local}$", transform=ax_local.transAxes, ha='center')
-        ax_local.text( 0.7, 0.1, r"$\alpha = %s$" %best_alpha,
+        
+        ax_local.text( 0.7, 0.2, r"${\rm RSZR}$", transform=ax_local.transAxes, ha='center')
+        ax_local.text( 0.7, 0.1, r"$\alpha_{\rm min} = %s$" %best_alpha,
                        transform=ax_local.transAxes, ha='center', fontsize=fs_og*0.75 )
         
         ax_local.set_xlabel( r"$\mu_{%s}$" %best_alpha, fontsize=fs_og*0.75 )
@@ -324,11 +335,11 @@ def do(sim,full_alpha,full_slope,full_intercept):
         ax_dist.set_xlabel( r'${\rm Offsets}~({\rm dex})$',
                             fontsize=fs_og*0.75 )
         
-        ax_dist.text( 0.05,0.85 , r'${\rm Global}$', color=glob_col,
+        ax_dist.text( 0.05,0.85 , r'${\rm FMR}$', color=glob_col,
                       transform=ax_dist.transAxes )
         ax_dist.text( 0.05,0.775, r'$\sigma=%.3f$' %np.std( offsets_global ), color=glob_col,
                       transform=ax_dist.transAxes, fontsize=fs_og*0.75 )
-        ax_dist.text( 0.05,0.65 , r'${\rm Local}$' , color=loc_col ,
+        ax_dist.text( 0.05,0.65 , r'${\rm RSZR}$' , color=loc_col ,
                       transform=ax_dist.transAxes )
         ax_dist.text( 0.05,0.575, r'$\sigma=%.3f$' %np.std( offsets_local ), color=loc_col,
                       transform=ax_dist.transAxes, fontsize=fs_og*0.75  )
@@ -340,6 +351,22 @@ def do(sim,full_alpha,full_slope,full_intercept):
     # for ax in axs[:,-1]:
     #     ax.set_ylabel( r'$\log {\rm (O/H)} + 12~({\rm dex})$', fontsize=fs_og*0.75 )
     
+    global_xmin, global_xmax = 99999, 7.5
+    global_ymin, global_ymin = 99999, 7.5
+    
+    ax_fits = list(np.concatenate( (np.array(axs[:,0]), np.array(axs[:,1])) ))
+    
+    for ax in ax_fits:
+            xmin, xmax = ax.get_xlim()
+            ymin, ymax = ax.get_ylim()
+            
+            global_xmin, global_xmax = min( global_xmin, xmin ), max( global_xmax, xmax )
+            global_ymin, global_ymax = min( global_ymin, ymin ), max( global_ymax, ymax )
+            
+    for ax in ax_fits:
+            ax.set_xlim( global_xmin, global_xmax )
+            ax.set_ylim( global_ymin, global_ymax )
+    
     axs[0,0].set_title( whichSim2Tex[sim], color='white' )
     axs[0,0].text( 1.0, 1.05, whichSim2Tex[sim], ha='center', transform=axs[0,0].transAxes )
     
@@ -350,10 +377,14 @@ def do(sim,full_alpha,full_slope,full_intercept):
     
     plt.tight_layout()
     plt.subplots_adjust(wspace=0,hspace=0.25)
-    plt.savefig( BLUE + 'JWST/' + '%s_alphas_comparison' %sim + '.pdf', bbox_inches='tight' )
+    
+    if dual_criteria:
+        plt.savefig( BLUE + 'JWST/' + '%s_alphas_comparison_dc' %sim + '.pdf', bbox_inches='tight' )
+    else:
+        plt.savefig( BLUE + 'JWST/' + '%s_alphas_comparison' %sim + '.pdf', bbox_inches='tight' )
     return global_mappable
 
-def get_full_alpha(sim):
+def get_full_alpha(sim, dual_criteria):
     print('Getting all z alpha: %s' %sim)
     snapshots, snap2z, BLUE_DIR = switch_sim(sim)
     
@@ -459,8 +490,10 @@ def get_full_alpha(sim):
         popt = np.polyfit(mu_fit, Z_fit, 1)
         a_s[index], b_s[index] = popt
         interp = np.polyval( popt, mu_fit )
-        
-        disps[index] = np.std( np.abs(Z_fit) - np.abs(interp) ) 
+        if dual_criteria:
+            disps[index] =  np.sum( np.abs(Z_fit) - np.abs(interp) )#np.std( np.abs(Z_fit) - np.abs(interp) ) * np.sum( np.abs(Z_fit) - np.abs(interp) )
+        else:
+            disps[index] = np.std( np.abs(Z_fit) - np.abs(interp) ) 
         
     argmin = np.argmin(disps)
 
@@ -541,8 +574,10 @@ sims = ['original','tng','eagle']
 
 global_mappable = None
 
+dual_criteria = False
+
 for index, sim in enumerate(sims):
     sim = sim.upper()
     print(sim)
-    full_alpha, full_slope, full_intercept = get_full_alpha(sim)
-    global_mappable = do(sim,full_alpha, full_slope, full_intercept)
+    full_alpha, full_slope, full_intercept = get_full_alpha(sim, dual_criteria)
+    global_mappable = do(sim,full_alpha, full_slope, full_intercept, dual_criteria)

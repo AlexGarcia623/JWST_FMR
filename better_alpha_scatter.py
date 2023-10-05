@@ -513,11 +513,11 @@ ymin, ymax = axs[1].get_ylim()
 
 axs[0].set_ylabel( r'${\rm Ratio}$' )
 
-axs[2].text( 0.05, 0.85, r'$\sigma_{\rm local} / \sigma_{\rm global}$',
+axs[2].text( 0.05, 0.85, r'$\sigma_{\rm RSZR} / \sigma_{\rm FMR}$',
             transform=axs[2].transAxes)
-axs[0].text( 0.05, 0.85,r'$\sigma_{\rm local} / \sigma_{\rm MZR}$',
+axs[0].text( 0.05, 0.85,r'$\sigma_{\rm RSZR} / \sigma_{\rm MZR}$',
             transform=axs[0].transAxes)
-axs[1].text( 0.05, 0.85,r'$\sigma_{\rm global} / \sigma_{\rm MZR}$',
+axs[1].text( 0.05, 0.85,r'$\sigma_{\rm FMR} / \sigma_{\rm MZR}$',
             transform=axs[1].transAxes)
 
 # l1 = plt.plot( redshifts, np.ones(len(redshifts))*10000, color='k', linestyle=linestyles[0],

@@ -45,13 +45,14 @@ STARS_OR_GAS = "gas".upper() # stars or gas
 
 PLOT        = True
 GIF         = False
-COMBINE_ALL = False
+COMBINE_ALL = True
 BEST_FIG    = True
 OVERWRITE   = False
 UNCERTAIN   = True
 DECREMENT   = False
 WEIRD_PLOT  = False
 FIT_WITH_LOW_REDSHIFT_ONLY = False
+DUAL_CRITERIA = False
 
 if (OVERWRITE):
     print('')
@@ -605,7 +606,7 @@ def do():
     print(n_gal)
     print(tot_n_gal)
     
-def do_all():
+def do_all(dual_criteria):
     
     all_Zgas      = []
     all_Zstar     = []
@@ -720,7 +721,12 @@ def do_all():
         # popt, pcov = curve_fit(line, muCurrent, Z_use)
         
         interp = np.polyval( popt, mu_fit )
-        resids = np.std( np.abs(Z_fit) - np.abs(interp) ) 
+        
+        if dual_criteria:
+            resids = np.sum( np.abs(Z_fit) - np.abs(interp) ) 
+        else:
+            resids = np.std( np.abs(Z_fit) - np.abs(interp) ) 
+        
         
         disps[index] = resids
         used_alphas[index] = alpha
@@ -997,7 +1003,10 @@ def do_all():
             
 
         plt.tight_layout()
-        plt.savefig( BLUE + 'JWST/' + '%s_big_fig.pdf' %WHICH_SIM, bbox_inches='tight' )
+        if dual_criteria:
+            plt.savefig( BLUE + 'JWST/' + '%s_big_fig_dc.pdf' %WHICH_SIM, bbox_inches='tight' )
+        else:
+            plt.savefig( BLUE + 'JWST/' + '%s_big_fig.pdf' %WHICH_SIM, bbox_inches='tight' )
         plt.clf()
 
         mpl.rcParams['font.size'] = fs_og
@@ -1311,7 +1320,7 @@ def sfmscut(m0, sfr0, THRESHOLD=-5.00E-01):
     return sfmsbool        
     
 if (COMBINE_ALL):
-    do_all()
+    do_all(DUAL_CRITERIA)
 else:
     do()
 alpha_file.close()

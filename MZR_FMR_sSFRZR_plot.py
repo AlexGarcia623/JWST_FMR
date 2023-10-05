@@ -340,7 +340,7 @@ for index, ax in enumerate(axs[:,0]):
 for index, ax in enumerate(axs.flatten()):
     ax.text( 0.5, 0.05, r'$\alpha = %s$' %alphas[index], transform=ax.transAxes, ha='center' )
     
-relations = [r'${\rm MZR}$',r'${\rm FMR}$',r'${\rm sSFR}^{-1}-{\rm ZR}$']
+relations = [r'${\rm MZR}$',r'${\rm RSZR}$',r'${\rm sSFR}^{-1}\!-\!{\rm ZR}$']
 for index, ax in enumerate(axs[0,:]):
     # ax.text( 0.5, 1.075, relations[index], transform=ax.transAxes, fontsize=label_size*1.1, ha='center' )
     ax.set_title( relations[index], fontsize=label_size*2 )

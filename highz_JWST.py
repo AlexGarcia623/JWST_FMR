@@ -261,7 +261,7 @@ Nakajima23_AM13_ydown = [
     (8.481362717264762+1, -0.5021445640407671),
 ]
 
-def do(ax,sim,c):
+def do(ax,sim,c,alpha,a,b,do_FMR):
     
     snapshots, snap2z, BLUE_DIR = switch_sim(sim)
     
@@ -269,8 +269,13 @@ def do(ax,sim,c):
     means       = []
     
     z0_alpha = 0.0
-    z0_m     = 1.0
+    z0_a     = 1.0
     z0_b     = 0.0
+    
+    if do_FMR:
+        z0_alpha = alpha
+        z0_a     = a
+        z0_b     = b
     
     for snap in snapshots:
         
@@ -348,9 +353,10 @@ def do(ax,sim,c):
             
             argmin = np.argmin(disp)
             
-            z0_alpha = round( alphas[argmin], 2 )
-            z0_a     = a_s[argmin]
-            z0_b     = b_s[argmin]
+            if not (do_FMR):
+                z0_alpha = round( alphas[argmin], 2 )
+                z0_a     = a_s[argmin]
+                z0_b     = b_s[argmin]
             
         mu = star_mass - z0_alpha * np.log10(SFR)
         
@@ -452,6 +458,119 @@ def do(ax,sim,c):
     
     ax.text( 0.05, 0.85, whichSim2Tex[sim], transform=ax.transAxes, color=color )
 
+def get_FMR(sim):
+    print('Getting all z alpha: %s' %sim)
+    snapshots, snap2z, BLUE_DIR = switch_sim(sim)
+    
+    all_Zgas      = []
+    all_Zstar     = []
+    all_star_mass = []
+    all_gas_mass  = []
+    all_SFR       = []
+    all_R_gas     = []
+    all_R_star    = []
+    
+    redshifts  = []
+    redshift   = 0
+        
+    for snap in snapshots:
+        currentDir = BLUE_DIR + 'data/' + 'snap%s/' %snap
+
+        Zgas      = np.load( currentDir + 'Zgas.npy' )
+        Zstar     = np.load( currentDir + 'Zstar.npy' ) 
+        star_mass = np.load( currentDir + 'Stellar_Mass.npy'  )
+        gas_mass  = np.load( currentDir + 'Gas_Mass.npy' )
+        SFR       = np.load( currentDir + 'SFR.npy' )
+        R_gas     = np.load( currentDir + 'R_gas.npy' )
+        R_star    = np.load( currentDir + 'R_star.npy' )
+        
+        sfms_idx = sfmscut(star_mass, SFR)
+
+        desired_mask = ((star_mass > 1.00E+01**(m_star_min)) &
+                        (star_mass < 1.00E+01**(m_star_max)) &
+                        (gas_mass  > 1.00E+01**(m_gas_min))  &
+                        (sfms_idx))
+        
+        gas_mass  =  gas_mass[desired_mask]
+        star_mass = star_mass[desired_mask]
+        SFR       =       SFR[desired_mask]
+        Zstar     =     Zstar[desired_mask]
+        Zgas      =      Zgas[desired_mask]
+        R_gas     =     R_gas[desired_mask]
+        R_star    =    R_star[desired_mask]
+        
+        all_Zgas     += list(Zgas     )
+        all_Zstar    += list(Zstar    )
+        all_star_mass+= list(star_mass)
+        all_gas_mass += list(gas_mass )
+        all_SFR      += list(SFR      )
+        all_R_gas    += list(R_gas    )
+        all_R_star   += list(R_star   )
+
+        redshifts += list( np.ones(len(Zgas)) * redshift )
+        
+        redshift  += 1
+        
+    Zgas      = np.array(all_Zgas      )
+    Zstar     = np.array(all_Zstar     )
+    star_mass = np.array(all_star_mass )
+    gas_mass  = np.array(all_gas_mass  )
+    SFR       = np.array(all_SFR       )
+    R_gas     = np.array(all_R_gas     )
+    R_star    = np.array(all_R_star    )
+    redshifts = np.array(redshifts     )
+
+    Zstar /= Zsun
+    OH     = Zgas * (zo/xh) * (1.00/16.00)
+
+    Zgas      = np.log10(OH) + 12
+
+    # Get rid of nans and random values -np.inf
+    nonans    = ~(np.isnan(Zgas)) & ~(np.isnan(Zstar)) & (Zstar > 0.0) & (Zgas > 0.0) 
+
+    sSFR      = SFR/star_mass
+    
+    gas_mass  = gas_mass [nonans]
+    star_mass = star_mass[nonans]
+    SFR       = SFR      [nonans]
+    sSFR      = sSFR     [nonans]
+    Zstar     = Zstar    [nonans]
+    Zgas      = Zgas     [nonans]
+    redshifts = redshifts[nonans]
+    R_gas     = R_gas    [nonans]
+    R_star    = R_star   [nonans]
+
+    star_mass     = np.log10(star_mass)
+    Zstar         = np.log10(Zstar)
+
+    alphas = np.linspace(0,1,100)
+
+    disps = np.ones(len(alphas)) * np.nan
+    
+    a_s, b_s = np.ones( len(alphas) ), np.ones( len(alphas) )
+    
+    if (STARS_OR_GAS == "GAS"):
+        Z_use = Zgas
+    elif (STARS_OR_GAS == "STARS"):
+        Z_use = Zstar
+
+    for index, alpha in enumerate(alphas):
+
+        muCurrent  = star_mass - alpha*np.log10( SFR )
+
+        mu_fit = muCurrent
+        Z_fit  = Z_use
+        
+        popt = np.polyfit(mu_fit, Z_fit, 1)
+        a_s[index], b_s[index] = popt
+        interp = np.polyval( popt, mu_fit )
+        
+        disps[index] = np.std( np.abs(Z_fit) - np.abs(interp) ) 
+        
+    argmin = np.argmin(disps)
+
+    return round( alphas[argmin], 2 ), a_s[argmin], b_s[argmin]
+    
 def line(data, a, b):
     return a*data + b
 
@@ -529,10 +648,16 @@ fig,axs = plt.subplots(3,1,figsize=(8,13),sharex=True, sharey=True)
 sims   = ['ORIGINAL','TNG','EAGLE']
 cols   = ['C1','C2','C0']
 
+do_FMR = True
+
 for index, sim in enumerate(sims):
     ax = axs[index]
     color = cols[index]#'k'#'C' + str(index)
-    do(ax, sim, color)
+    if (do_FMR):
+        alpha, a, b = get_FMR(sim)
+    else:
+        alpha, a, b = 0.0, 0.0, 0.0
+    do(ax, sim, color, alpha, a, b, do_FMR)
 
 ymin, ymax = axs[0].get_ylim()
 axs[0].set_ylim( ymin, ymax*1.2 )
@@ -544,11 +669,17 @@ leg = axs[1].legend( loc='upper right', frameon=False, fontsize=18,
 colors = ['purple','violet','goldenrod','navy']
 for index, text in enumerate(leg.get_texts()):
     text.set_color(colors[index])
-axs[1].set_ylabel( r'$\log {\rm (O/H)} - \log{\rm (O/H)}_{{\rm FMR}(z=0)}$' )
+if do_FMR:
+    axs[1].set_ylabel( r'$\log {\rm (O/H)} - \log{\rm (O/H)}_{\rm FMR}$' )
+else:
+    axs[1].set_ylabel( r'$\log {\rm (O/H)} - \log{\rm (O/H)}_{{\rm RSZR}(z=0)}$' )
     
 axs[2].set_xlabel( r'${\rm Redshift}$' )
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.0)
 
-plt.savefig( BLUE + 'JWST/' + 'all_offsets' + '.pdf', bbox_inches='tight' )
+if do_FMR:
+    plt.savefig( BLUE + 'JWST/' + 'all_offsets_FMR' + '.pdf', bbox_inches='tight' )
+else:
+    plt.savefig( BLUE + 'JWST/' + 'all_offsets' + '.pdf', bbox_inches='tight' )
