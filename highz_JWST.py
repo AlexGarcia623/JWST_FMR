@@ -43,11 +43,6 @@ STARS_OR_GAS = "gas".upper() # stars or gas
 
 BLUE_DIR = BLUE + WHICH_SIM + "/"
 
-print('#'*30)
-print(WHICH_SIM)
-print('#'*30)
-print('')
-
 whichSim2Tex = {
     'TNG'     :r'${\rm TNG}$',
     'ORIGINAL':r'${\rm Illustris}$',
@@ -570,7 +565,7 @@ def get_FMR(sim):
     argmin = np.argmin(disps)
 
     return round( alphas[argmin], 2 ), a_s[argmin], b_s[argmin]
-    
+
 def line(data, a, b):
     return a*data + b
 
@@ -648,7 +643,16 @@ fig,axs = plt.subplots(3,1,figsize=(8,13),sharex=True, sharey=True)
 sims   = ['ORIGINAL','TNG','EAGLE']
 cols   = ['C1','C2','C0']
 
-do_FMR = True
+do_FMR  = True
+do_LFMR = False # This is not an option I should use!!!
+
+if not do_FMR and do_LFMR:
+    do_LFMR = False
+    print('')
+    print('#'*100)
+    print('Not doing local FMR because we are not doing the FMR')
+    print('#'*100)
+    print('')
 
 for index, sim in enumerate(sims):
     ax = axs[index]
@@ -670,9 +674,9 @@ colors = ['purple','violet','goldenrod','navy']
 for index, text in enumerate(leg.get_texts()):
     text.set_color(colors[index])
 if do_FMR:
-    axs[1].set_ylabel( r'$\log {\rm (O/H)} - \log{\rm (O/H)}_{\rm FMR}$' )
+    axs[1].set_ylabel( r'$\log {\rm (O/H)} - \log{\rm (O/H)}_{\rm GFMR}$' )
 else:
-    axs[1].set_ylabel( r'$\log {\rm (O/H)} - \log{\rm (O/H)}_{{\rm RSZR}(z=0)}$' )
+    axs[1].set_ylabel( r'$\log {\rm (O/H)} - \log{\rm (O/H)}_{{\rm LFMR}}$' )
     
 axs[2].set_xlabel( r'${\rm Redshift}$' )
 

@@ -122,7 +122,7 @@ m_star_min = 8.0
 m_star_max = 10.5
 m_gas_min  = 8.5
 
-def do(sim,full_alpha,full_slope,full_intercept,dual_criteria):
+def do(sim,full_alpha,full_slope,full_intercept,LFMR,z0_alpha, z0_slope, z0_intercept):
     
     fig, axs = plt.subplots( 3,4, figsize=(10,10),
                              gridspec_kw={'width_ratios': [1, 1, 0.4, 1]} )
@@ -218,10 +218,8 @@ def do(sim,full_alpha,full_slope,full_intercept,dual_criteria):
             interp = np.polyval( popt, muCurrent )
             # interp = popt[0] * muCurrent + popt[1]
 
-            if dual_criteria:
-                disp[index] = np.sum( np.abs(Z_use) - np.abs(interp) )# np.std( np.abs(Z_use) - np.abs(interp) ) * np.sum( np.abs(Z_use) - np.abs(interp) )
-            else:
-                disp[index] = np.std( np.abs(Z_use) - np.abs(interp) ) 
+            
+            disp[index] = np.std( np.abs(Z_use) - np.abs(interp) ) 
 
         argmin = np.argmin(disp)
 
@@ -260,7 +258,10 @@ def do(sim,full_alpha,full_slope,full_intercept,dual_criteria):
         ax_global.set_ylim(ymin,ymax)
         
         ax_global.text( 0.05, 0.85, r"$z=%s$" %int(snap_index), transform=ax_global.transAxes )
-        ax_global.text( 0.7 , 0.2 , r"${\rm FMR}$", transform=ax_global.transAxes, ha='center')
+        if LFMR:
+            ax_global.text( 0.7 , 0.2 , r"${\rm Global}$", transform=ax_global.transAxes, ha='center')
+        else:
+            ax_global.text( 0.7 , 0.2 , r"${\rm GFMR}$", transform=ax_global.transAxes, ha='center')
         ax_global.text( 0.7 , 0.1 , r"$\alpha_{\rm min} = %s$" %full_alpha,
                         transform=ax_global.transAxes, ha='center', fontsize=fs_og*0.75)
         
@@ -273,45 +274,85 @@ def do(sim,full_alpha,full_slope,full_intercept,dual_criteria):
             ax_global.set_xticklabels([7,8,9,''])
         
         # Plot the individual alpha
-        best_alpha = round( alphas[argmin], 2 )
-        best_mu    = star_mass - best_alpha * np.log10(SFR)
-        best_line  = a_s[argmin] * best_mu + b_s[argmin]
-        plot_best_line = a_s[argmin] * np.linspace(0,10) + b_s[argmin]
-        
-        Hist1, current_x, current_y = np.histogram2d(best_mu,Z_use,bins=(100,100))
-        Hist2, _        , _         = np.histogram2d(best_mu,Z_use,bins=[current_x,current_y])
+        if LFMR:
+            best_mu    = star_mass - z0_alpha * np.log10(SFR)
+            best_line  = z0_slope * best_mu + z0_intercept
+            
+            plot_mu        = np.linspace(7,11,200)
+            plot_best_line = z0_slope * plot_mu + z0_intercept
+            
+            Hist1, current_x, current_y = np.histogram2d(best_mu,Z_use,bins=(100,100))
+            Hist2, _        , _         = np.histogram2d(best_mu,Z_use,bins=[current_x,current_y])
 
-        Hist1 = np.transpose(Hist1)
-        Hist2 = np.transpose(Hist2)
+            Hist1 = np.transpose(Hist1)
+            Hist2 = np.transpose(Hist2)
 
-        current_hist = Hist1/Hist2 - 1
+            current_hist = Hist1/Hist2 - 1
 
-        vmin = 0 - redshifts[snap_index]
-        vmax = 8 - redshifts[snap_index]
+            vmin = 0 - redshifts[snap_index]
+            vmax = 8 - redshifts[snap_index]
 
-        mappable = ax_local.pcolormesh( current_x, current_y, current_hist,
-                                        vmin = vmin, vmax = vmax, cmap=CMAP_TO_USE,
-                                        rasterized=True )
-        
-        if (snap_index == 0):
-            global_mappable = mappable
+            mappable = ax_local.pcolormesh( current_x, current_y, current_hist,
+                                            vmin = vmin, vmax = vmax, cmap=CMAP_TO_USE,
+                                            rasterized=True )
 
-        ax_local.plot( best_mu, best_line, color='k', lw=2.5 )
-        
-        ax_local.text( 0.7, 0.2, r"${\rm RSZR}$", transform=ax_local.transAxes, ha='center')
-        ax_local.text( 0.7, 0.1, r"$\alpha_{\rm min} = %s$" %best_alpha,
-                       transform=ax_local.transAxes, ha='center', fontsize=fs_og*0.75 )
-        
-        ax_local.set_xlabel( r"$\mu_{%s}$" %best_alpha, fontsize=fs_og*0.75 )
-        
-        ax_local.set_ylim( global_ymin, global_ymax )
-        
+            if (snap_index == 0):
+                global_mappable = mappable
+                
+            xmin,xmax = ax_local.get_xlim()
+            ymin,ymax = ax_local.get_ylim()
+            ax_local.plot( plot_mu, plot_best_line, color='k', lw=2.5 )
+            ax_local.set_xlim(xmin,xmax)
+            ax_local.set_ylim(ymin,ymax)
+            
+            ax_local.text( 0.7, 0.2, r"${\rm Local}$", transform=ax_local.transAxes, ha='center')
+            ax_local.text( 0.7, 0.1, r"$\alpha_{\rm min} = %s$" %z0_alpha,
+                           transform=ax_local.transAxes, ha='center', fontsize=fs_og*0.75 )
+
+            ax_local.set_xlabel( r"$\mu_{%s}$" %z0_alpha, fontsize=fs_og*0.75 )
+
+            ax_local.set_ylim( global_ymin, global_ymax )
+            
+        else:
+            best_alpha = round( alphas[argmin], 2 )
+            best_mu    = star_mass - best_alpha * np.log10(SFR)
+            best_line  = a_s[argmin] * best_mu + b_s[argmin]
+            plot_best_line = a_s[argmin] * np.linspace(0,10) + b_s[argmin]
+
+            Hist1, current_x, current_y = np.histogram2d(best_mu,Z_use,bins=(100,100))
+            Hist2, _        , _         = np.histogram2d(best_mu,Z_use,bins=[current_x,current_y])
+
+            Hist1 = np.transpose(Hist1)
+            Hist2 = np.transpose(Hist2)
+
+            current_hist = Hist1/Hist2 - 1
+
+            vmin = 0 - redshifts[snap_index]
+            vmax = 8 - redshifts[snap_index]
+
+            mappable = ax_local.pcolormesh( current_x, current_y, current_hist,
+                                            vmin = vmin, vmax = vmax, cmap=CMAP_TO_USE,
+                                            rasterized=True )
+
+            if (snap_index == 0):
+                global_mappable = mappable
+
+            ax_local.plot( best_mu, best_line, color='k', lw=2.5 )
+
+            ax_local.text( 0.7, 0.2, r"${\rm RSZR}$", transform=ax_local.transAxes, ha='center')
+            ax_local.text( 0.7, 0.1, r"$\alpha_{\rm min} = %s$" %best_alpha,
+                           transform=ax_local.transAxes, ha='center', fontsize=fs_og*0.75 )
+
+            ax_local.set_xlabel( r"$\mu_{%s}$" %best_alpha, fontsize=fs_og*0.75 )
+
+            ax_local.set_ylim( global_ymin, global_ymax )
+
         local_xmin, local_xmax = ax_local.get_xlim()
-        
+
         xmin, xmax = min( global_xmin, local_xmin ), max( global_xmax, local_xmax )
         ax_local .set_xlim( xmin, xmax )
         ax_global.set_xlim( xmin, xmax )
-        
+
         ax_local.set_yticklabels([])
         
         # Plot the offsets
@@ -328,19 +369,28 @@ def do(sim,full_alpha,full_slope,full_intercept,dual_criteria):
         ax_dist.hist( offsets_global, color=glob_col, alpha=0.25, bins=nbins )
         ax_dist.hist( offsets_local , color=loc_col , alpha=0.25, bins=nbins )
         
-        ax_dist.set_xlim( -0.65,0.65 )
+        if LFMR:
+            ax_dist.set_xlim( -1.1,1.1 )
+        else:
+            ax_dist.set_xlim( -0.65,0.65 )
         
         ax_dist.axvline( 0, color='b', lw=1.5 )
         
         ax_dist.set_xlabel( r'${\rm Offsets}~({\rm dex})$',
                             fontsize=fs_og*0.75 )
-        
-        ax_dist.text( 0.05,0.85 , r'${\rm FMR}$', color=glob_col,
-                      transform=ax_dist.transAxes )
+
+        if LFMR:
+            ax_dist.text( 0.05,0.85 , r'${\rm Global}$', color=glob_col,
+                          transform=ax_dist.transAxes )
+            ax_dist.text( 0.05,0.65 , r'${\rm Local}$' , color=loc_col ,
+                          transform=ax_dist.transAxes )
+        else:
+            ax_dist.text( 0.05,0.85 , r'${\rm GFMR}$', color=glob_col,
+                          transform=ax_dist.transAxes )
+            ax_dist.text( 0.05,0.65 , r'${\rm RSZR}$' , color=loc_col ,
+                          transform=ax_dist.transAxes )
         ax_dist.text( 0.05,0.775, r'$\sigma=%.3f$' %np.std( offsets_global ), color=glob_col,
                       transform=ax_dist.transAxes, fontsize=fs_og*0.75 )
-        ax_dist.text( 0.05,0.65 , r'${\rm RSZR}$' , color=loc_col ,
-                      transform=ax_dist.transAxes )
         ax_dist.text( 0.05,0.575, r'$\sigma=%.3f$' %np.std( offsets_local ), color=loc_col,
                       transform=ax_dist.transAxes, fontsize=fs_og*0.75  )
 
@@ -378,13 +428,12 @@ def do(sim,full_alpha,full_slope,full_intercept,dual_criteria):
     plt.tight_layout()
     plt.subplots_adjust(wspace=0,hspace=0.25)
     
-    if dual_criteria:
-        plt.savefig( BLUE + 'JWST/' + '%s_alphas_comparison_dc' %sim + '.pdf', bbox_inches='tight' )
+    if LFMR:
+        plt.savefig( BLUE + 'JWST/' + '%s_alphas_comparison_LFMR' %sim + '.pdf', bbox_inches='tight' )
     else:
         plt.savefig( BLUE + 'JWST/' + '%s_alphas_comparison' %sim + '.pdf', bbox_inches='tight' )
-    return global_mappable
 
-def get_full_alpha(sim, dual_criteria):
+def get_full_alpha(sim):
     print('Getting all z alpha: %s' %sim)
     snapshots, snap2z, BLUE_DIR = switch_sim(sim)
     
@@ -490,10 +539,113 @@ def get_full_alpha(sim, dual_criteria):
         popt = np.polyfit(mu_fit, Z_fit, 1)
         a_s[index], b_s[index] = popt
         interp = np.polyval( popt, mu_fit )
-        if dual_criteria:
-            disps[index] =  np.sum( np.abs(Z_fit) - np.abs(interp) )#np.std( np.abs(Z_fit) - np.abs(interp) ) * np.sum( np.abs(Z_fit) - np.abs(interp) )
-        else:
-            disps[index] = np.std( np.abs(Z_fit) - np.abs(interp) ) 
+        
+        disps[index] = np.std( np.abs(Z_fit) - np.abs(interp) ) 
+        
+    argmin = np.argmin(disps)
+
+    return round( alphas[argmin], 2 ), a_s[argmin], b_s[argmin]
+
+def get_z0_alpha(sim):
+    print('Getting z=0 alpha: %s' %sim)
+    snapshots, snap2z, BLUE_DIR = switch_sim(sim)
+    
+    all_Zgas      = []
+    all_Zstar     = []
+    all_star_mass = []
+    all_gas_mass  = []
+    all_SFR       = []
+    all_R_gas     = []
+    all_R_star    = []
+    
+    snap = snapshots[0]
+
+    currentDir = BLUE_DIR + 'data/' + 'snap%s/' %snap
+
+    Zgas      = np.load( currentDir + 'Zgas.npy' )
+    Zstar     = np.load( currentDir + 'Zstar.npy' ) 
+    star_mass = np.load( currentDir + 'Stellar_Mass.npy'  )
+    gas_mass  = np.load( currentDir + 'Gas_Mass.npy' )
+    SFR       = np.load( currentDir + 'SFR.npy' )
+    R_gas     = np.load( currentDir + 'R_gas.npy' )
+    R_star    = np.load( currentDir + 'R_star.npy' )
+
+    sfms_idx = sfmscut(star_mass, SFR)
+
+    desired_mask = ((star_mass > 1.00E+01**(m_star_min)) &
+                    (star_mass < 1.00E+01**(m_star_max)) &
+                    (gas_mass  > 1.00E+01**(m_gas_min))  &
+                    (sfms_idx))
+
+    gas_mass  =  gas_mass[desired_mask]
+    star_mass = star_mass[desired_mask]
+    SFR       =       SFR[desired_mask]
+    Zstar     =     Zstar[desired_mask]
+    Zgas      =      Zgas[desired_mask]
+    R_gas     =     R_gas[desired_mask]
+    R_star    =    R_star[desired_mask]
+
+    all_Zgas     += list(Zgas     )
+    all_Zstar    += list(Zstar    )
+    all_star_mass+= list(star_mass)
+    all_gas_mass += list(gas_mass )
+    all_SFR      += list(SFR      )
+    all_R_gas    += list(R_gas    )
+    all_R_star   += list(R_star   )
+        
+    Zgas      = np.array(all_Zgas      )
+    Zstar     = np.array(all_Zstar     )
+    star_mass = np.array(all_star_mass )
+    gas_mass  = np.array(all_gas_mass  )
+    SFR       = np.array(all_SFR       )
+    R_gas     = np.array(all_R_gas     )
+    R_star    = np.array(all_R_star    )
+
+    Zstar /= Zsun
+    OH     = Zgas * (zo/xh) * (1.00/16.00)
+
+    Zgas      = np.log10(OH) + 12
+
+    # Get rid of nans and random values -np.inf
+    nonans    = ~(np.isnan(Zgas)) & ~(np.isnan(Zstar)) & (Zstar > 0.0) & (Zgas > 0.0) 
+
+    sSFR      = SFR/star_mass
+    
+    gas_mass  = gas_mass [nonans]
+    star_mass = star_mass[nonans]
+    SFR       = SFR      [nonans]
+    sSFR      = sSFR     [nonans]
+    Zstar     = Zstar    [nonans]
+    Zgas      = Zgas     [nonans]
+    R_gas     = R_gas    [nonans]
+    R_star    = R_star   [nonans]
+
+    star_mass     = np.log10(star_mass)
+    Zstar         = np.log10(Zstar)
+
+    alphas = np.linspace(0,1,100)
+    a_s    = np.zeros( len(alphas) ) # y = ax + b
+    b_s    = np.zeros( len(alphas) )
+
+    disps = np.ones(len(alphas)) * np.nan
+    
+    if (STARS_OR_GAS == "GAS"):
+        Z_use = Zgas
+    elif (STARS_OR_GAS == "STARS"):
+        Z_use = Zstar
+
+    for index, alpha in enumerate(alphas):
+
+        muCurrent  = star_mass - alpha*np.log10( SFR )
+
+        mu_fit = muCurrent
+        Z_fit  = Z_use
+        
+        popt = np.polyfit(mu_fit, Z_fit, 1)
+        a_s[index], b_s[index] = popt
+        interp = np.polyval( popt, mu_fit )
+        
+        disps[index] = np.std( np.abs(Z_fit) - np.abs(interp) ) 
         
     argmin = np.argmin(disps)
 
@@ -572,12 +724,11 @@ def sfmscut(m0, sfr0):
 
 sims = ['original','tng','eagle']
 
-global_mappable = None
-
-dual_criteria = False
+LFMR = True
 
 for index, sim in enumerate(sims):
     sim = sim.upper()
     print(sim)
-    full_alpha, full_slope, full_intercept = get_full_alpha(sim, dual_criteria)
-    global_mappable = do(sim,full_alpha, full_slope, full_intercept, dual_criteria)
+    full_alpha, full_slope, full_intercept = get_full_alpha(sim)
+    z0_alpha  , z0_slope  , z0_intercept   = get_z0_alpha(sim)
+    do(sim,full_alpha, full_slope, full_intercept, LFMR, z0_alpha, z0_slope, z0_intercept)
