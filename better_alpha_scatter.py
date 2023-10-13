@@ -506,7 +506,7 @@ def sfmscut(m0, sfr0):
     sfmsbool = (sfmsbool == 1)
     return sfmsbool        
 
-GLOBAL_MODE = True
+GLOBAL_MODE = False
 
 fig, axs = plt.subplots(1,3,figsize=(20,7),sharey=True,sharex=True)
 
@@ -535,28 +535,11 @@ for index, sim in enumerate(sims):
     
 axs[0].axhline(1, color='gray', linestyle=':', alpha=0.5)
 
-# if GLOBAL_MODE:
-#     plt.ylabel( r'$\sigma_{\rm individual} / \sigma_{\rm global}$' )
-# else:
-# plt.ylabel( r'$\sigma_{\rm individual} / \sigma_{z=0}$' )
 for ax in axs:
     ax.set_xlabel( r'${\rm Redshift}$' )
     ax.axhline(1, color='k', linestyle='solid', alpha=1, lw=3)
 
-# axs[0].add_artist(leg)
-# plt.tight_layout()
-# plt.subplots_adjust(hspace=0.0)
-# if GLOBAL_MODE:
-#     plt.savefig( BLUE + 'JWST/' + 'all_scatter_global' + '.pdf', bbox_inches='tight' )
-# else:
-#     plt.savefig( BLUE + 'JWST/' + 'all_scatter_z=0' + '.pdf', bbox_inches='tight' )
-    
-# plt.clf()
-
 redshifts = np.arange(0,9)
-
-# fig = plt.figure(figsize=(10,7))
-# ax  = plt.gca()
 
 loc  = np.array( all_loc )
 glob = np.array( all_glob )
@@ -604,48 +587,24 @@ leg = axs[2].legend( frameon=False,handletextpad=0.25, handlelength=0,
 for index, text in enumerate(leg.get_texts()):
     text.set_color(col[index])
 
-# if GLOBAL_MODE:
-#     plt.ylabel( r'$\sigma_{\rm global} / \sigma_{\rm MZR}$' )
-#     leg_loc = 'upper left'
-# else:
-#     plt.ylabel( r'$\sigma_{z=0} / \sigma_{\rm MZR}$' )
-#     leg_loc = 'upper right'
-# plt.xlabel( r'${\rm Redshift}$' )
-
-
 xmin, xmax = axs[1].get_xlim()
 ymin, ymax = axs[1].get_ylim()
 
 axs[0].set_ylabel( r'${\rm Ratio}$' )
 
-axs[2].text( 0.05, 0.85, r'$\sigma_{\rm RSZR} / \sigma_{\rm GFMR}$',
-            transform=axs[2].transAxes)
+if GLOBAL_MODE:
+    axs[2].text( 0.05, 0.85, r'$\sigma_{\rm RSZR} / \sigma_{\rm GFMR}$',
+                transform=axs[2].transAxes)
+    axs[1].text( 0.05, 0.85,r'$\sigma_{\rm GFMR} / \sigma_{\rm MZR}$',
+            transform=axs[1].transAxes)
+else:
+    axs[2].text( 0.05, 0.85, r'$\sigma_{\rm RSZR} / \sigma_{\rm LFMR}$',
+                transform=axs[2].transAxes)
+    axs[1].text( 0.05, 0.85,r'$\sigma_{\rm LFMR} / \sigma_{\rm MZR}$',
+            transform=axs[1].transAxes)
+    
 axs[0].text( 0.05, 0.85,r'$\sigma_{\rm RSZR} / \sigma_{\rm MZR}$',
             transform=axs[0].transAxes)
-axs[1].text( 0.05, 0.85,r'$\sigma_{\rm GFMR} / \sigma_{\rm MZR}$',
-            transform=axs[1].transAxes)
-
-# l1 = plt.plot( redshifts, np.ones(len(redshifts))*10000, color='k', linestyle=linestyles[0],
-#           label = r'$\sigma_{\rm local} / \sigma_{\rm global}$' )
-# l2 = plt.plot( redshifts, np.ones(len(redshifts))*10000, color='k', linestyle=linestyles[1],
-#           label = r'$\sigma_{\rm global} / \sigma_{\rm MZR}$' )
-
-# plot_lines = [l1, l2]
-# axs[0].set_xlim(xmin, xmax)
-# axs[1].set_xlim(xmin, xmax)
-# axs[0].set_ylim(ymin, ymax)
-
-# legend1 = axs[1].legend([l[0] for l in plot_lines], 
-#            [r'$\sigma_{\rm local} / \sigma_{\rm global}$',
-#             r'$\sigma_{\rm global} / \sigma_{\rm MZR}$'],
-#            loc='upper left',
-#            frameon=False,handletextpad=0.25, labelspacing=0.05,)
-# axs[1].add_artist(legend1)
-
-# leg = plt.legend( frameon=False,handletextpad=0.25, handlelength=0, labelspacing=0.05, loc=leg_loc )
-# for index, text in enumerate(leg.get_texts()):
-#     text.set_color(col[index])
-
 
 
 xmin, xmax = axs[1].get_xlim()
@@ -671,9 +630,8 @@ axs[0].set_xticks([0,2,4,6,8])
 
 plt.tight_layout()
 plt.subplots_adjust(wspace=0.0)
-# if GLOBAL_MODE:
-#     plt.savefig( BLUE + 'JWST/' + 'MZR_scatter_global' + '.pdf', bbox_inches='tight' )
-# else:
-#     plt.savefig( BLUE + 'JWST/' + 'MZR_scatter_z=0' + '.pdf', bbox_inches='tight' )
 
-plt.savefig( BLUE + 'JWST/' + 'all_scatters' + '.pdf', bbox_inches='tight' )
+if GLOBAL_MODE:
+    plt.savefig( BLUE + 'JWST/' + 'all_scatters' + '.pdf', bbox_inches='tight' )
+else:
+    plt.savefig( BLUE + 'JWST/' + 'all_scatters_LFMR' + '.pdf', bbox_inches='tight' )
