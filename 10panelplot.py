@@ -286,14 +286,13 @@ def do(sim,LFMR,all_z_fit):
     plt.xlabel(r'$\mu_{%s} = \log M_* - %s\log{\rm SFR}$' %(min_alpha,min_alpha))
 
     if (LFMR):
-        axBig.text( 0.75, 0.15, r"${\rm Local~ FMR}$", transform=axBig.transAxes, ha='center' )
+        if all_z_fit:
+            axBig.text( 0.75, 0.15, r"${\rm Modified}$", transform=axBig.transAxes, ha='center' )
+        axBig.text( 0.75, 0.1 , r"${\rm Local~ FMR}$"  , transform=axBig.transAxes, ha='center' )
     else:
         axBig.text( 0.75, 0.15, r"${\rm Global~ FMR}$", transform=axBig.transAxes, ha='center' )
+
     
-    if all_z_fit:
-        axBig.text( 0.75, 0.1, r"${\rm All~}z~{\rm fit}$", transform=axBig.transAxes, ha='center' )
-    else:
-        axBig.text( 0.75, 0.1, r"$z=0~{\rm Calibrated}$", transform=axBig.transAxes, ha='center' )
     axBig.text( 0.05, 0.9, "%s" %WHICH_SIM_TEX[sim], transform=axBig.transAxes )
 
     # plt.tight_layout()
@@ -600,7 +599,7 @@ def sfmscut(m0, sfr0, THRESHOLD=-5.00E-01):
 sims = ['original','tng','eagle']
 
 LFMR = True
-all_z_fit = True
+all_z_fit = False
 
 if not LFMR:
     all_z_fit = False

@@ -756,7 +756,7 @@ fig,axs = plt.subplots(3,1,figsize=(8,13),sharex=True, sharey=True)
 sims   = ['ORIGINAL','TNG','EAGLE']
 cols   = ['C1','C2','C0']
 
-do_FMR    = True
+do_FMR    = False
 all_z_fit = True
 
 if all_z_fit and not do_FMR:
@@ -784,9 +784,10 @@ for index, text in enumerate(leg.get_texts()):
     text.set_color(colors[index])
     
 if (all_z_fit):
-    axs[0].text( 0.75, 0.85, r'${\rm All}~z~{\rm fit}$', transform=axs[0].transAxes )
+    axs[0].text( 0.5, 0.85, r'${\rm Modified~Local~FMR}$', transform=axs[0].transAxes )
+    # axs[0].text( 0.75, 0.75, r'$\alpha_{{\rm min},\;z=1}$', transform=axs[0].transAxes ) # Line 589 --> change snapshot to snapshots[1]
 if not do_FMR:
-    axs[0].text( 0.6 , 0.85, r'$z=0~{\rm Calibrated}$', transform=axs[0].transAxes )
+    axs[0].text( 0.7, 0.85, r'${\rm Local~FMR}$', transform=axs[0].transAxes )
     
 axs[1].set_ylabel( r'$\log {\rm (O/H)} - \log{\rm (O/H)}_{{\rm FMR}}$' )
     
