@@ -143,8 +143,8 @@ def do(sim,full_alpha,ax,color,symbol,GLOBAL_MODE,linestyle):
         R_gas     = np.load( currentDir + 'R_gas.npy' )
         R_star    = np.load( currentDir + 'R_star.npy' )
 
-        THRESHOLD = -5.00E-01
-        sfms_idx = sfmscut(star_mass, SFR)
+        THRESHOLD = -5.00E-01 # nominal = -5.00E-01
+        sfms_idx = sfmscut(star_mass, SFR, THRESHOLD)
 
         desired_mask = ((star_mass > 1.00E+01**(m_star_min)) &
                         (star_mass < 1.00E+01**(m_star_max)) &
@@ -203,6 +203,8 @@ def do(sim,full_alpha,ax,color,symbol,GLOBAL_MODE,linestyle):
             interp = np.polyval( popt, muCurrent )
 
             disp[index] = np.std( np.abs(Z_use) - np.abs(interp) )
+        
+        print( sim, snap2z[snap], round( alphas[np.argmin(disp)], 2 ) ) 
         
         if not (GLOBAL_MODE) and (snap2z[snap] == 'z=0'):
             full_alpha = alphas[ np.argmin(disp) ]
@@ -327,7 +329,7 @@ def get_full_alpha(sim):
         disps[index] = np.std( np.abs(Z_fit) - np.abs(interp) ) 
         
     argmin = np.argmin(disps)
-
+    
     return round( alphas[argmin], 2 )
 
 def get_z0_alpha(sim):
@@ -438,7 +440,7 @@ def get_z0_alpha(sim):
 def line(data, a, b):
     return a*data + b
 
-def sfmscut(m0, sfr0):
+def sfmscut(m0, sfr0, threshold=-5.00E-01):
     nsubs = len(m0)
     idx0  = np.arange(0, nsubs)
     non0  = ((m0   > 0.000E+00) & 
@@ -467,7 +469,7 @@ def sfmscut(m0, sfr0):
         ssfrb = ssfr[idx]
         sfrb  =  sfr[idx]
         rdg   = np.median(ssfrb)
-        idxb  = (ssfrb - rdg) > -5.000E-01
+        idxb  = (ssfrb - rdg) > threshold#-5.000E-01
         lenb  = np.sum(idxb)
         idxbs[cnt:(cnt+lenb)] = idx0b[idxb]
         cnt += lenb
@@ -496,7 +498,7 @@ def sfmscut(m0, sfr0):
         mb    =    m[idx]
         ssfrb = ssfr[idx]
         sfrb  =  sfr[idx]
-        idxb  = (ssfrb - ssfrlin[i]) > -5.000E-01
+        idxb  = (ssfrb - ssfrlin[i]) > threshold#-5.000E-01
         lenb  = np.sum(idxb)
         idxbs[cnt:(cnt+lenb)] = idx0b[idxb]
         cnt += lenb

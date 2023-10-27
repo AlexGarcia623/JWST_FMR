@@ -284,8 +284,8 @@ def do(ax,sim,c,alpha,a,b,do_FMR):
         R_gas     = np.load( currentDir + 'R_gas.npy' )
         R_star    = np.load( currentDir + 'R_star.npy' )
 
-        THRESHOLD = -5.00E-01
-        sfms_idx = sfmscut(star_mass, SFR)
+        THRESHOLD = -1.00E-01
+        sfms_idx = sfmscut(star_mass, SFR, THRESHOLD)
 
         desired_mask = ((star_mass > 1.00E+01**(m_star_min)) &
                         (star_mass < 1.00E+01**(m_star_max)) &
@@ -682,7 +682,7 @@ def get_z0_alpha(sim):
 def line(data, a, b):
     return a*data + b
 
-def sfmscut(m0, sfr0):
+def sfmscut(m0, sfr0, threshold=-5.00E-01):
     nsubs = len(m0)
     idx0  = np.arange(0, nsubs)
     non0  = ((m0   > 0.000E+00) & 
@@ -711,7 +711,7 @@ def sfmscut(m0, sfr0):
         ssfrb = ssfr[idx]
         sfrb  =  sfr[idx]
         rdg   = np.median(ssfrb)
-        idxb  = (ssfrb - rdg) > -5.000E-01
+        idxb  = (ssfrb - rdg) > threshold
         lenb  = np.sum(idxb)
         idxbs[cnt:(cnt+lenb)] = idx0b[idxb]
         cnt += lenb
@@ -740,7 +740,7 @@ def sfmscut(m0, sfr0):
         mb    =    m[idx]
         ssfrb = ssfr[idx]
         sfrb  =  sfr[idx]
-        idxb  = (ssfrb - ssfrlin[i]) > -5.000E-01
+        idxb  = (ssfrb - ssfrlin[i]) > threshold
         lenb  = np.sum(idxb)
         idxbs[cnt:(cnt+lenb)] = idx0b[idxb]
         cnt += lenb
@@ -756,7 +756,7 @@ fig,axs = plt.subplots(3,1,figsize=(8,13),sharex=True, sharey=True)
 sims   = ['ORIGINAL','TNG','EAGLE']
 cols   = ['C1','C2','C0']
 
-do_FMR    = False
+do_FMR    = True
 all_z_fit = True
 
 if all_z_fit and not do_FMR:

@@ -38,7 +38,7 @@ mpl.rcParams['ytick.right'] = True
 
 BLUE = './blue_FMR/'
 
-FLIP = True
+FLIP = False
 
 WHICH_SIM    = "eagle".upper() 
 STARS_OR_GAS = "gas".upper() # stars or gas
@@ -123,7 +123,7 @@ m_star_min = 8.0
 m_star_max = 10.5
 m_gas_min  = 8.5
 
-def do(flip):
+def do(flip, plot=False):
     
     sim_MZR     = 'EAGLE'
     sim_scatter = 'ORIGINAL'
@@ -136,15 +136,26 @@ def do(flip):
     snapshots, snap2z, BLUE_DIR = switch_sim(sim_scatter)
     print('Getting offsets')
     
-    # What we end up wanting is:
-    #    (i)   the scatter about the MZR is
+    # What we want is:
+    #    (i)   the scatter about the MZR
     #    (ii)  the masses of all the galaxies
     #    (iii) the SFRs of all the galaxies
     all_scatters = []
     all_masses   = []
     all_SFRs     = []
     
-    for snap_index, snap in enumerate(snapshots):        
+    fig, axs = plt.subplots( 1, 3, figsize=(16,7), sharey=True, sharex=True )
+    
+    ax_left   = axs[0]
+    ax_center = axs[1]
+    ax_right  = axs[2]
+    
+    for snap_index, snap in enumerate(snapshots):
+        # if (snap_index) != 7:
+        #     all_scatters.append([])
+        #     all_masses.append([])
+        #     all_SFRs.append([])
+        #     continue
         currentDir = BLUE_DIR + 'data/' + 'snap%s/' %snap
 
         Zgas      = np.load( currentDir + 'Zgas.npy' )
@@ -152,8 +163,6 @@ def do(flip):
         star_mass = np.load( currentDir + 'Stellar_Mass.npy'  )
         gas_mass  = np.load( currentDir + 'Gas_Mass.npy' )
         SFR       = np.load( currentDir + 'SFR.npy' )
-        R_gas     = np.load( currentDir + 'R_gas.npy' )
-        R_star    = np.load( currentDir + 'R_star.npy' )
 
         THRESHOLD = -5.00E-01
         sfms_idx = sfmscut(star_mass, SFR)
@@ -168,8 +177,6 @@ def do(flip):
         SFR       = SFR      [desired_mask]
         Zstar     = Zstar    [desired_mask]
         Zgas      = Zgas     [desired_mask]
-        R_gas     = R_gas    [desired_mask]
-        R_star    = R_star   [desired_mask]
 
         Zstar /= Zsun
         OH     = Zgas * (zo/xh) * (1.00/16.00)
@@ -187,8 +194,6 @@ def do(flip):
         sSFR      = sSFR     [nonans]
         Zstar     = Zstar    [nonans]
         Zgas      = Zgas     [nonans]
-        R_gas     = R_gas    [nonans]
-        R_star    = R_star   [nonans]
 
         gas_mass      = np.log10(gas_mass)
         star_mass     = np.log10(star_mass)
@@ -207,6 +212,18 @@ def do(flip):
         metals = metals[filter_fit_nans]
         
         MZsR = interp1d(masses,metals,fill_value='extrapolate')
+        
+        if plot:
+            color = 'C' + str(snap_index)
+            bin_centers, bin_vals, bin_errs = medianZR( star_mass, Z_use, nbins=10, return_err_bars=True )
+            ax_left.fill_between( bin_centers, bin_vals - bin_errs, bin_vals + bin_errs, alpha=0.15 )
+            
+            ax_left.scatter( star_mass, MZsR(star_mass), color=color )
+            ax_left.plot( bin_centers, bin_vals, lw=3, color=color )
+            
+            # ax_left.scatter( masses,metals,color=color )
+            
+            ax_left.text( 0.05, 0.9, whichSim2Tex[sim_scatter] + ' ' + r'${\rm MZR}$', transform=ax_left.transAxes )
         
         offsets = Z_use - MZsR(star_mass)
         
@@ -222,7 +239,10 @@ def do(flip):
     #    (i) Previous scatter about the new MZR's evolution
     flipped_scatters = []
     
-    for snap_index, snap in enumerate(snapshots):        
+    for snap_index, snap in enumerate(snapshots):
+        # if (snap_index) != 7:
+        #     flipped_scatters.append([])
+        #     continue
         currentDir = BLUE_DIR + 'data/' + 'snap%s/' %snap
 
         Zgas      = np.load( currentDir + 'Zgas.npy' )
@@ -230,8 +250,6 @@ def do(flip):
         star_mass = np.load( currentDir + 'Stellar_Mass.npy'  )
         gas_mass  = np.load( currentDir + 'Gas_Mass.npy' )
         SFR       = np.load( currentDir + 'SFR.npy' )
-        R_gas     = np.load( currentDir + 'R_gas.npy' )
-        R_star    = np.load( currentDir + 'R_star.npy' )
 
         THRESHOLD = -5.00E-01
         sfms_idx = sfmscut(star_mass, SFR)
@@ -246,8 +264,6 @@ def do(flip):
         SFR       = SFR      [desired_mask]
         Zstar     = Zstar    [desired_mask]
         Zgas      = Zgas     [desired_mask]
-        R_gas     = R_gas    [desired_mask]
-        R_star    = R_star   [desired_mask]
 
         Zstar /= Zsun
         OH     = Zgas * (zo/xh) * (1.00/16.00)
@@ -265,8 +281,6 @@ def do(flip):
         sSFR      = sSFR     [nonans]
         Zstar     = Zstar    [nonans]
         Zgas      = Zgas     [nonans]
-        R_gas     = R_gas    [nonans]
-        R_star    = R_star   [nonans]
 
         gas_mass      = np.log10(gas_mass)
         star_mass     = np.log10(star_mass)
@@ -276,6 +290,14 @@ def do(flip):
             Z_use = Zgas
         elif (STARS_OR_GAS == "STARS"):
             Z_use = Zstar
+            
+        if plot:
+            color = 'C' + str(snap_index)
+            bin_centers, bin_vals, bin_errs = medianZR( star_mass, Z_use, nbins=10, return_err_bars=True )
+            ax_right.fill_between( bin_centers, bin_vals - bin_errs, bin_vals + bin_errs, alpha=0.15 )
+            ax_right.plot( bin_centers, bin_vals, lw=3, color=color )
+                    
+            ax_right.text( 0.05, 0.9, whichSim2Tex[sim_MZR] + ' ' + r'${\rm MZR}$', transform=ax_right.transAxes )
         
         masses, metals = getMedians(star_mass,Z_use)
         
@@ -288,8 +310,13 @@ def do(flip):
         MZsR = interp1d(masses,metals,fill_value='extrapolate')
         # Interpolate the MZR at the scatter simulation masses
         pred_metals = MZsR( all_masses[snap_index] )
+        # pred_metals = MZsR( star_mass )
         # Add back in the scatter
+        # scatters = Z_use - pred_metals
         flipped_scatters.append( pred_metals + all_scatters[snap_index] )
+        # flipped_scatters.append( pred_metals + scatters )
+        # all_masses.append( star_mass )
+        # all_SFRs.append( SFR )
     
     # At this point, we have (from each redshift):
     #   (i)   the masses from scatter sim
@@ -301,10 +328,23 @@ def do(flip):
     Z_use     = []
     
     for index in range(len(snapshots)):
-        
+        # if (index) != 7:
+        #     continue
         star_mass += list( all_masses[index] )
         SFR       += list( all_SFRs[index] )
         Z_use     += list( flipped_scatters[index] ) 
+        
+        if plot:
+            color = 'C' + str(index)
+            bin_centers, bin_vals, bin_errs = medianZR( all_masses[index], flipped_scatters[index],
+                                                        nbins=10, return_err_bars=True )
+            ax_center.fill_between( bin_centers, bin_vals - bin_errs, bin_vals + bin_errs, alpha=0.15 )
+            ax_center.plot( bin_centers, bin_vals, lw=3, color=color )
+                        
+            ax_center.text( 0.05, 0.9, whichSim2Tex[sim_MZR] + ' ' + r'${\rm MZR}$',
+                            transform=ax_center.transAxes )
+            ax_center.text( 0.05, 0.8, whichSim2Tex[sim_scatter] + ' ' + r'${\rm scatter}$',
+                            transform=ax_center.transAxes )
     
     star_mass = np.array(star_mass, dtype=np.float64)
     SFR       = np.array(SFR      , dtype=np.float64)
@@ -346,6 +386,18 @@ def do(flip):
     print( 'alpha other: %s' %alphas_true[sim_MZR] )
     print('#'*100)
     
+    if plot:
+        ax_left  .set_xlabel( r'$\log M_*~[M_\odot]$' )
+        ax_center.set_xlabel( r'$\log M_*~[M_\odot]$' )
+        ax_right .set_xlabel( r'$\log M_*~[M_\odot]$' )
+        
+        ax_left.set_ylabel( r'$\log({\rm O/H}) + 12 ~{\rm (dex)}$' )
+        
+        plt.tight_layout()
+        plt.subplots_adjust(wspace=0.0)
+        plt.savefig( BLUE + '/FMR_paper2/' + '%s_about_%s' %(sim_scatter,sim_MZR) + '.pdf',
+                     bbox_inches='tight' )
+    
 def getMedians(mass,metals,nbins=100):
     start = np.min(mass)
     end   = np.max(mass)
@@ -361,7 +413,7 @@ def getMedians(mass,metals,nbins=100):
         
         mask = ((mass > (current)) & (mass < (current + step)))
         
-        if (len(metals[mask]) > 10):
+        if (len(metals[mask]) > 5):
             medians.append( np.median( metals[mask] ) )
         else:
             medians.append( np.nan )
@@ -443,4 +495,30 @@ def sfmscut(m0, sfr0):
     sfmsbool = (sfmsbool == 1)
     return sfmsbool  
 
-do(FLIP)
+def medianZR( x, y, nbins = 5, return_err_bars = False ):
+    
+    start = np.min(x)
+    end   = np.max(x)
+    
+    bin_centers = np.linspace(start,end,nbins)
+    binWidth = (end - start) / nbins
+    
+    bin_vals = np.ones(len(bin_centers))
+    bin_errs = np.ones(len(bin_centers))
+    
+    for index, current in enumerate(bin_centers):
+        mask = ((x > current - binWidth/2) & (x < current + binWidth/2))
+        
+        if (sum(mask) < 20):
+            bin_vals[index] = np.nan
+            bin_errs[index] = np.nan
+        else:
+            bin_vals[index] = np.nanmedian( y[mask] )
+            bin_errs[index] = np.nanstd( y[mask] )
+    
+    if return_err_bars:
+        return bin_centers, bin_vals, bin_errs
+    else:
+        return bin_centers, bin_vals
+
+do(FLIP,plot=True)
