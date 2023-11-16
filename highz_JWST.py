@@ -284,7 +284,7 @@ def do(ax,sim,c,alpha,a,b,do_FMR):
         R_gas     = np.load( currentDir + 'R_gas.npy' )
         R_star    = np.load( currentDir + 'R_star.npy' )
 
-        THRESHOLD = -1.00E-01
+        THRESHOLD = -5.00E-01
         sfms_idx = sfmscut(star_mass, SFR, THRESHOLD)
 
         desired_mask = ((star_mass > 1.00E+01**(m_star_min)) &
